@@ -60,14 +60,21 @@ const generateId = () => {
 app.post('/api/persons', (request, response) => {
     body = request.body;
 
-    const person = {
-        id: generateId(),
-        name : body.name,
-        number: body.number,
+    if(body.name === "" || body.name === undefined 
+    || body.number === "" || body === undefined) {
+        response.status(400).json({error: 'Name or number missing in the request body'}).end();
+    }else if (persons.some(p => body.name === p.name)){
+        response.status(400).json({error: 'Name must be unique'}).end();
+    } else{
+        const person = {
+            id: generateId(),
+            ... body,
+        }
+        console.log(person);
+        persons = persons.concat(person);
+        response.json(persons);
     }
-    console.log(person);
-    persons.concat(person);
-    response.json(person);
+
 })
 
 app.get('/info', (request, response) => {
