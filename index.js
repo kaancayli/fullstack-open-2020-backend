@@ -97,7 +97,8 @@ app.get('/info', (request, response) => {
     `);
 })
 
+const HOST = 0.0.0.0;
 const PORT = process.env.PORT || 3001
-app.listen(PORT, () => {
+app.listen(PORT,HOST, () => {
   console.log(`Server running on port ${PORT}`)
 })
