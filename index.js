@@ -1,4 +1,4 @@
-require('dotenv').config()
+require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
@@ -19,36 +19,42 @@ morgan.token("body", function (req, res) {
   return "";
 });
 
-const errorHandler = (error, request, response, next) => {
-  console.error(error.message);
-  if (error.name === "CastError") {
-    return response.status(400).send({ error: "malformatted id" });
-  }
-  next(error);
-};
-
-app.use(errorHandler);
-
 app.get("/api/persons", (request, response, next) => {
-  Person.find({}).then((persons) => response.json(persons)).catch(error => next(error));
+  Person.find({})
+    .then((persons) => response.json(persons))
+    .catch((error) => next(error));
 });
 
-app.get("/api/persons/:id", (request, response) => {
-  Person.findById(request.params.id).then((person) => {
-    console.log(person);
-    if (person) {
-      response.json(person);
-    } else {
-      response.status(404).end();
-    }
-  }).catch(error => next(error));
+app.get("/api/persons/:id", (request, response, next) => {
+  Person.findById(request.params.id)
+    .then((person) => {
+      console.log(person);
+      if (person) {
+        response.json(person);
+      } else {
+        response.status(404).end();
+      }
+    })
+    .catch((error) => next(error));
 });
+
+app.put("/api/persons/:id", (request, response, next) => {
+  body = request.body;
+  Person.findByIdAndUpdate(request.params.id, body, {new: true})
+  .then(person => {
+    console.log(person);
+    response.json(person);
+  })
+  .catch((error) => next(error));
+})
 
 app.delete("/api/persons/:id", (request, response, next) => {
-  Person.findByIdAndDelete(request.params.id).then((persons) => {
-    console.log(persons);
-    response.status(204).end();
-  }).catch(error => next(error));
+  Person.findByIdAndDelete(request.params.id)
+    .then((persons) => {
+      console.log(persons);
+      response.status(204).end();
+    })
+    .catch((error) => next(error));
 });
 
 // const generateId = () => {
@@ -61,37 +67,38 @@ app.delete("/api/persons/:id", (request, response, next) => {
 
 app.post("/api/persons", (request, response, next) => {
   body = request.body;
-
-  if (
-    body.name === "" ||
-    body.name === undefined ||
-    body.number === "" ||
-    body === undefined
-  ) {
-    response
-      .status(400)
-      .json({ error: "Name or number missing in the request body" })
-      .end();
-  } else {
-    Person.findOneAndUpdate({name: body.name}, {number: body.number}, {
-      new: true,
-      upsert: true,
-    }).then(person => {
+  const person = new Person({
+    ...body,
+  });
+  person
+    .save()
+    .then((person) => {
       console.log(person);
       response.json(person);
-    }).catch(error => next(error));
-  }
+    }).catch((error) => next(error));
 });
 
 app.get("/info", (request, response) => {
-  Person.count({}).then(count => {
+  Person.count({}).then((count) => {
     console.log(count);
     response.send(`
       <p>Phonebook has info for ${count} people</p>
       <p>${Date()}<p>
       `);
-  })
+  });
 });
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
+  } else if (error.name === "ValidationError") {
+    return response.status(400).send({error: error.message});
+  }
+  next(error);
+};
+
+app.use(errorHandler);
 
 const HOST = "0.0.0.0";
 const PORT = process.env.PORT || 3001;
